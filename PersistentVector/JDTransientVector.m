@@ -199,6 +199,11 @@ NSMutableArray *editableTail(NSArray *tail) {
                                  userInfo:nil];
 }
 
+-(unsigned)count {
+    [self ensureEditable];
+    return self.cnt;
+}
+
 #pragma mark - Dealloc
 
 -(void)dealloc {

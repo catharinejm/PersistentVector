@@ -7,6 +7,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "JDPersistentVector.h"
 
 int main(int argc, const char * argv[])
 {
@@ -14,8 +15,18 @@ int main(int argc, const char * argv[])
     @autoreleasepool {
         
         // insert code here...
-        NSLog(@"Hello, World!");
+        JDPersistentVector *v = [JDPersistentVector EMPTY];
+        NSArray *items = @[@"one", @"two", @"three"];
         
+        for (NSString *s in items) {
+            JDPersistentVector *newV = [v cons:s];
+            [v release];
+            v = newV;
+        }
+        
+        for (int i = 0; i < [v count]; ++i) {
+            NSLog(@"%d: %@", i, [v nth:i]);
+        }
     }
     return 0;
 }

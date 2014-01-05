@@ -8,6 +8,7 @@
 
 #import "JDPersistentVector.h"
 #import "JDTransientVector.h"
+#import "JDUtil.h"
 
 @interface JDPersistentVector ()
 
@@ -29,10 +30,8 @@
         _EMPTY_NODE = [[JDVectorNode alloc] initWithEdit:[[JDAtomicReference alloc] initWithVal:nil]
                                                   array:[NSMutableArray arrayWithCapacity:32]];
     });
-    return _EMPTY_NODE;
+    return [_EMPTY_NODE retain];
 }
-
--(JDVectorNode*)EMPTY_NODE { return [JDPersistentVector EMPTY_NODE]; }
 
 +(JDPersistentVector*)EMPTY {
     static JDPersistentVector *_EMPTY = nil;
@@ -40,18 +39,16 @@
     dispatch_once(&once, ^{
         _EMPTY = [[JDPersistentVector alloc] initWithCnt:0 shift:5 root:[JDPersistentVector EMPTY_NODE] tail:[NSArray array]];
     });
-    return _EMPTY;
+    return [_EMPTY retain];
 }
-
--(JDPersistentVector*)EMPTY { return [JDPersistentVector EMPTY]; }
 
 #pragma mark - Initializers
 
 +(instancetype)createWithArray:(NSArray*)items {
-    JDTransientVector *ret = [self.EMPTY asTransient];
+    JDTransientVector *ret = [[[JDPersistentVector EMPTY] asTransient] autorelease];
     for (id o in items)
-        ret = [ret conj:o];
-    return [ret persistent];
+        ret = [ret cons:o];
+    return [[ret persistent] autorelease];
 }
 
 -(instancetype)initWithCnt:(unsigned)c shift:(unsigned)s root:(JDVectorNode*)r tail:(NSArray*)t {
@@ -76,7 +73,7 @@
 #pragma mark - Transient
 
 -(JDTransientVector*)asTransient {
-    return [JDTransientVector vectorWithVector:self];
+    return [[JDTransientVector vectorWithVector:self] retain];
 }
 
 #pragma mark - Util
@@ -110,7 +107,7 @@
 -(id)nth:(unsigned int)i notFound:(id)nf {
     if (i < self.cnt)
         return [self nth:i];
-    return nf;
+    return [nf autorelease];
 }
 
 JDVectorNode *doAssoc(unsigned level, JDVectorNode *node, unsigned i, id val) {
@@ -127,9 +124,9 @@ JDVectorNode *doAssoc(unsigned level, JDVectorNode *node, unsigned i, id val) {
 -(instancetype)assocN:(unsigned int)i object:(id)val {
     if (i < self.cnt) {
         if (i >= [self tailoff]) {
-            NSMutableArray *mutableTail = [[NSMutableArray arrayWithArray:self.tail] autorelease];
+            NSMutableArray *mutableTail = [NSMutableArray arrayWithArray:self.tail];
             mutableTail[i & 0x01f] = (val != nil ? val : [NSNull null]);
-            NSArray *newTail = [[NSArray arrayWithArray:mutableTail] autorelease];
+            NSArray *newTail = [NSArray arrayWithArray:mutableTail];
             return [[JDPersistentVector alloc] initWithCnt:self.cnt
                                                      shift:self.shift
                                                       root:self.root
@@ -151,14 +148,6 @@ JDVectorNode *doAssoc(unsigned level, JDVectorNode *node, unsigned i, id val) {
     return self.cnt;
 }
 
-JDVectorNode *newPath(JDAtomicReference *edit, unsigned level, JDVectorNode *node) {
-    if (level == 0)
-        return node;
-    JDVectorNode *ret = [[[JDVectorNode alloc] initWithEdit:edit] autorelease];
-    [ret.array addObject:newPath(edit, level - 5, node)];
-    return ret;
-}
-
 -(JDVectorNode*)pushTailAt:(unsigned)level parent:(JDVectorNode*)parent tail:(JDVectorNode*)tailnode {
     int subidx = ((self.cnt - 1) >> level) & 0x01f;
     JDVectorNode *ret = [[JDVectorNode alloc] initWithEdit:parent.edit array:[[parent.array copy] autorelease]];
@@ -178,9 +167,9 @@ JDVectorNode *newPath(JDAtomicReference *edit, unsigned level, JDVectorNode *nod
 -(instancetype)cons:(id)val {
     // Room in tail?
     if (self.cnt - [self tailoff] < 32) {
-        NSMutableArray *mutableTail = [NSMutableArray arrayWithArray:[[self.tail copy] autorelease]];
+        NSMutableArray *mutableTail = [[self.tail mutableCopy] autorelease];
         [mutableTail addObject:(val != nil ? val : [NSNull null])];
-        NSArray *newTail = [[NSArray arrayWithArray:mutableTail] autorelease];
+        NSArray *newTail = [NSArray arrayWithArray:mutableTail];
         return [[JDPersistentVector alloc] initWithCnt:self.cnt + 1
                                                  shift:self.shift
                                                   root:self.root
@@ -189,14 +178,14 @@ JDVectorNode *newPath(JDAtomicReference *edit, unsigned level, JDVectorNode *nod
     // Full tail, push into tree
     JDVectorNode *newroot;
     JDVectorNode *tailnode = [[[JDVectorNode alloc] initWithEdit:self.root.edit
-                                                          array:[[NSMutableArray arrayWithArray:self.tail] autorelease]]
+                                                          array:[[self.tail mutableCopy] autorelease]]
                               autorelease];
                               
     unsigned newshift = self.shift;
     // Overflow root?
     if ((self.cnt >> 5) > (1 << self.shift)) {
         newroot = [[[JDVectorNode alloc] initWithEdit:self.root.edit] autorelease];
-        [newroot.array addObject:[self.root autorelease]];
+        [newroot.array addObject:self.root];
         [newroot.array addObject:newPath(self.root.edit, self.shift, tailnode)];
         newshift += 5;
     } else

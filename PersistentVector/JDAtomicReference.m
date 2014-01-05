@@ -11,7 +11,7 @@
 @implementation JDAtomicReference
 
 +(instancetype)referenceWithVal:(id)val {
-    return [[JDAtomicReference alloc] initWithVal:val];
+    return [[[JDAtomicReference alloc] initWithVal:val] autorelease];
 }
 
 -(instancetype)initWithVal:(id)val {

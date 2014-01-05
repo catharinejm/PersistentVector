@@ -8,10 +8,12 @@
 
 #import "JDTransientVector.h"
 #import "JDPersistentVector.h"
+#import "JDUtil.h"
 
 JDVectorNode *editableRoot(JDVectorNode *node) {
-    return [[JDVectorNode alloc] initWithEdit:[JDAtomicReference referenceWithVal:[NSThread currentThread]]
-                                        array:[[node.array copy] autorelease]];
+    return [[[JDVectorNode alloc] initWithEdit:[JDAtomicReference referenceWithVal:[NSThread currentThread]]
+                                        array:[[node.array copy] autorelease]]
+            autorelease];
 }
 
 NSMutableArray *editableTail(NSArray *tail) {
@@ -25,10 +27,11 @@ NSMutableArray *editableTail(NSArray *tail) {
 #pragma mark - Initializers
 
 +(instancetype)vectorWithVector:(JDPersistentVector*)vec {
-    return [[JDTransientVector alloc] initWithCnt:vec.cnt
+    return [[[JDTransientVector alloc] initWithCnt:vec.cnt
                                             shift:vec.shift
                                              root:editableRoot(vec.root)
-                                             tail:editableTail(vec.tail)];
+                                             tail:editableTail(vec.tail)]
+            autorelease];
 }
 
 -(instancetype)initWithCnt:(unsigned)c shift:(unsigned)s root:(JDVectorNode*)r tail:(NSMutableArray*)t {
@@ -69,7 +72,131 @@ NSMutableArray *editableTail(NSArray *tail) {
 -(JDVectorNode*)ensureEditableNode:(JDVectorNode*)node {
     if (node.edit == self.root.edit)
         return node;
-    return [[JDVectorNode alloc] initWithEdit:self.root.edit array:[[node.array copy] autorelease]];
+    return [[[JDVectorNode alloc] initWithEdit:self.root.edit array:[[node.array copy] autorelease]] autorelease];
+}
+
+-(unsigned)tailoff {
+    if (self.cnt < 32)
+        return 0;
+    return ((self.cnt-1) >> 5) << 5;
+}
+
+-(NSMutableArray*)arrayFor:(unsigned)i {
+    if (i < self.cnt) {
+        if (i >= [self tailoff])
+            return self.tail;
+        JDVectorNode *node = self.root;
+        for (int level = (int)self.shift; level > 0; level -= 5)
+            node = (JDVectorNode*)node.array[(i >> level) & 0x01f];
+        return node.array;
+    }
+    @throw [NSException exceptionWithName:NSRangeException
+                                   reason:[NSString stringWithFormat:@"index %du out of bounds", i]
+                                 userInfo:nil];
+}
+
+-(NSMutableArray*)editableArrayFor:(unsigned)i {
+    if (i < self.cnt) {
+        if (i >= [self tailoff])
+            return self.tail;
+        JDVectorNode *node = self.root;
+        for (int level = (int)self.shift; level > 0; level -= 5)
+            node = [self ensureEditableNode:(JDVectorNode*)node.array[(i >> level) & 0x01f]];
+        return node.array;
+    }
+    @throw [NSException exceptionWithName:NSRangeException
+                                   reason:[NSString stringWithFormat:@"index %du out of bounds", i]
+                                 userInfo:nil];
+}
+
+-(JDVectorNode*)pushTailAt:(unsigned)level parent:(JDVectorNode*)parent tail:(JDVectorNode*)tailnode {
+    parent = [self ensureEditableNode:parent];
+    unsigned subidx = ((self.cnt - 1) >> level) & 0x01f;
+    JDVectorNode *ret = parent;
+    JDVectorNode *nodeToInsert;
+    if (level == 5)
+        nodeToInsert = tailnode;
+    else {
+        if (subidx >= parent.array.count)
+            nodeToInsert = newPath(self.root.edit, level - 5, tailnode);
+        else
+            nodeToInsert = [self pushTailAt:level - 5 parent:(JDVectorNode*)parent.array[subidx] tail:tailnode];
+    }
+    [ret.array addObject:nodeToInsert];
+    return ret;
+}
+
+-(instancetype)cons:(id)val {
+    [self ensureEditable];
+    int i = self.cnt;
+    // room in tail?
+    if (i - [self tailoff] < 32) {
+        [self.tail addObject:(val != nil ? val : [NSNull null])];
+        _cnt++;
+        return self;
+    }
+    // Full tail, push into tree
+    JDVectorNode *newroot;
+    JDVectorNode *tailnode = [[[JDVectorNode alloc] initWithEdit:self.root.edit array:self.tail] autorelease];
+    self.tail = [NSMutableArray arrayWithCapacity:32];
+    [self.tail addObject:(val != nil ? val : [NSNull null])];
+    unsigned newshift = self.shift;
+    
+    // Overflow root?
+    if ((self.cnt >> 5) < (1 << self.shift)) {
+        newroot = [[[JDVectorNode alloc] initWithEdit:self.root.edit] autorelease];
+        [newroot.array addObject:self.root];
+        [newroot.array addObject:newPath(self.root.edit, self.shift, tailnode)];
+        newshift += 5;
+    } else
+        newroot = [self pushTailAt:self.shift parent:self.root tail:tailnode];
+    self.root = newroot;
+    self.shift = newshift;
+    self.cnt++;
+    return self;
+}
+
+-(id)nth:(unsigned)i {
+    [self ensureEditable];
+    id v = [self arrayFor:i][i & 0x01f];
+    if (v == [NSNull null]) return nil;
+    return v;
+}
+
+-(id)nth:(unsigned int)i notFound:(id)nf {
+    if (i < self.cnt)
+        return [self nth:i];
+    return [nf autorelease];
+}
+
+-(JDVectorNode*)doAssocAt:(unsigned)level node:(JDVectorNode*)node index:(unsigned)i object:(id)val {
+    node = [self ensureEditableNode:node];
+    JDVectorNode *ret = node;
+    if (level == 0)
+        ret.array[i & 0x01f] = (val != nil ? val : [NSNull null]);
+    else {
+        unsigned subidx = (i >> level) & 0x01f;
+        ret.array[subidx] = [self doAssocAt:level - 5 node:(JDVectorNode*)node.array[subidx] index:i object:val];
+    }
+    return ret;
+}
+
+-(instancetype)assocN:(unsigned int)i object:(id)val {
+    [self ensureEditable];
+    if (i < self.cnt) {
+        if (i >= [self tailoff]) {
+            self.tail[i & 0x01f] = (val != nil ? val : [NSNull null]);
+            return self;
+        }
+        
+        self.root = [self doAssocAt:self.shift node:self.root index:i object:val];
+        return self;
+    }
+    if (i == self.cnt)
+        return [self cons:val];
+    @throw [NSException exceptionWithName:NSRangeException
+                                   reason:[NSString stringWithFormat:@"index %du is out of bounds", i]
+                                 userInfo:nil];
 }
 
 #pragma mark - Dealloc

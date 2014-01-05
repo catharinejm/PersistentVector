@@ -10,10 +10,6 @@
 
 @protocol JDIVector <NSObject>
 
--(instancetype)conj:(id)obj;
-
--(NSArray*)arrayFor:(unsigned)i;
-
 -(id)nth:(unsigned)i;
 -(id)nth:(unsigned)i notFound:(id)nf;
 -(instancetype)assocN:(unsigned)i object:(id)val;

@@ -14,10 +14,10 @@
 
 @interface JDTransientVector : NSObject <JDIVector>
 
-@property (nonatomic, readonly) unsigned cnt;
-@property (nonatomic, readonly) unsigned shift;
-@property (nonatomic, readonly) JDVectorNode *root;
-@property (nonatomic, readonly) NSMutableArray *tail;
+@property (nonatomic) unsigned cnt;
+@property (nonatomic) unsigned shift;
+@property (nonatomic, retain) JDVectorNode *root;
+@property (nonatomic, retain) NSMutableArray *tail;
 
 +(instancetype)vectorWithVector:(id<JDIVector>)vec;
 -(instancetype)initWithCnt:(unsigned)c shift:(unsigned)s root:(JDVectorNode*)r tail:(NSMutableArray*)t;

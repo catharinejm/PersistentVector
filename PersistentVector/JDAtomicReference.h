@@ -10,8 +10,9 @@
 
 @interface JDAtomicReference : NSObject
 
-@property (atomic, retain) id val;
+@property (atomic, assign) id val;
 
--(id)initWithVal:(id)val;
++(instancetype)referenceWithVal:(id)val;
+-(instancetype)initWithVal:(id)val;
 
 @end

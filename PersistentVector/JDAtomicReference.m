@@ -10,17 +10,16 @@
 
 @implementation JDAtomicReference
 
--(id)initWithVal:(id)val {
++(instancetype)referenceWithVal:(id)val {
+    return [[JDAtomicReference alloc] initWithVal:val];
+}
+
+-(instancetype)initWithVal:(id)val {
     self = [super init];
     if (self) {
         _val = val;
     }
     return self;
-}
-
--(void)dealloc {
-    [_val release];
-    [super dealloc];
 }
 
 @end

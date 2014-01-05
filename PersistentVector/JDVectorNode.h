@@ -14,7 +14,7 @@
 @property (nonatomic, retain) JDAtomicReference *edit;
 @property (nonatomic, retain) NSMutableArray *array;
 
--(id)initWithEdit:(JDAtomicReference*)ed array:(NSArray*)ary;
+-(id)initWithEdit:(JDAtomicReference*)ed array:(NSMutableArray*)ary;
 -(id)initWithEdit:(JDAtomicReference*)ed;
 
 @end

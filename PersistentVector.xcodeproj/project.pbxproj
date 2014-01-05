@@ -10,6 +10,9 @@
 		FC97F8F11878DB1E00D4CFB3 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FC97F8F01878DB1E00D4CFB3 /* Foundation.framework */; };
 		FC97F8F41878DB1E00D4CFB3 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = FC97F8F31878DB1E00D4CFB3 /* main.m */; };
 		FC97F8F81878DB1E00D4CFB3 /* PersistentVector.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = FC97F8F71878DB1E00D4CFB3 /* PersistentVector.1 */; };
+		FC97F9001878EEAC00D4CFB3 /* JDVectorNode.m in Sources */ = {isa = PBXBuildFile; fileRef = FC97F8FF1878EEAC00D4CFB3 /* JDVectorNode.m */; };
+		FC97F9031878EEF400D4CFB3 /* JDAtomicReference.m in Sources */ = {isa = PBXBuildFile; fileRef = FC97F9021878EEF400D4CFB3 /* JDAtomicReference.m */; };
+		FC97F9061878EF3700D4CFB3 /* JDPersistentVector.m in Sources */ = {isa = PBXBuildFile; fileRef = FC97F9051878EF3700D4CFB3 /* JDPersistentVector.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -31,6 +34,12 @@
 		FC97F8F31878DB1E00D4CFB3 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		FC97F8F61878DB1E00D4CFB3 /* PersistentVector-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "PersistentVector-Prefix.pch"; sourceTree = "<group>"; };
 		FC97F8F71878DB1E00D4CFB3 /* PersistentVector.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = PersistentVector.1; sourceTree = "<group>"; };
+		FC97F8FE1878EEAC00D4CFB3 /* JDVectorNode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JDVectorNode.h; sourceTree = "<group>"; };
+		FC97F8FF1878EEAC00D4CFB3 /* JDVectorNode.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = JDVectorNode.m; sourceTree = "<group>"; };
+		FC97F9011878EEF400D4CFB3 /* JDAtomicReference.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JDAtomicReference.h; sourceTree = "<group>"; };
+		FC97F9021878EEF400D4CFB3 /* JDAtomicReference.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = JDAtomicReference.m; sourceTree = "<group>"; };
+		FC97F9041878EF3700D4CFB3 /* JDPersistentVector.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JDPersistentVector.h; sourceTree = "<group>"; };
+		FC97F9051878EF3700D4CFB3 /* JDPersistentVector.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = JDPersistentVector.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -74,8 +83,14 @@
 			isa = PBXGroup;
 			children = (
 				FC97F8F31878DB1E00D4CFB3 /* main.m */,
-				FC97F8F71878DB1E00D4CFB3 /* PersistentVector.1 */,
+				FC97F9011878EEF400D4CFB3 /* JDAtomicReference.h */,
+				FC97F9021878EEF400D4CFB3 /* JDAtomicReference.m */,
+				FC97F9041878EF3700D4CFB3 /* JDPersistentVector.h */,
+				FC97F9051878EF3700D4CFB3 /* JDPersistentVector.m */,
+				FC97F8FE1878EEAC00D4CFB3 /* JDVectorNode.h */,
+				FC97F8FF1878EEAC00D4CFB3 /* JDVectorNode.m */,
 				FC97F8F51878DB1E00D4CFB3 /* Supporting Files */,
+				FC97F8F71878DB1E00D4CFB3 /* PersistentVector.1 */,
 			);
 			path = PersistentVector;
 			sourceTree = "<group>";
@@ -114,6 +129,7 @@
 		FC97F8E51878DB1E00D4CFB3 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				CLASSPREFIX = JD;
 				LastUpgradeCheck = 0500;
 				ORGANIZATIONNAME = "Jon Distad";
 			};
@@ -139,6 +155,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FC97F9001878EEAC00D4CFB3 /* JDVectorNode.m in Sources */,
+				FC97F9061878EF3700D4CFB3 /* JDPersistentVector.m in Sources */,
+				FC97F9031878EEF400D4CFB3 /* JDAtomicReference.m in Sources */,
 				FC97F8F41878DB1E00D4CFB3 /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -217,6 +236,7 @@
 		FC97F8FC1878DB1E00D4CFB3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_ARC = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PersistentVector/PersistentVector-Prefix.pch";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -226,6 +246,7 @@
 		FC97F8FD1878DB1E00D4CFB3 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_OBJC_ARC = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PersistentVector/PersistentVector-Prefix.pch";
 				PRODUCT_NAME = "$(TARGET_NAME)";

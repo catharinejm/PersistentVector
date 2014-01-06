@@ -51,7 +51,7 @@ NSMutableArray *editableTail(NSArray *tail) {
     [self ensureEditable];
     self.root.edit.val = nil;
     NSArray *trimmedTail = [NSArray arrayWithArray:self.tail];
-    return [[JDPersistentVector alloc] initWithCnt:self.cnt shift:self.shift root:self.root tail:trimmedTail];
+    return [[[JDPersistentVector alloc] initWithCnt:self.cnt shift:self.shift root:self.root tail:trimmedTail] autorelease];
 }
 
 #pragma mark - Util

@@ -27,7 +27,7 @@
     static JDVectorNode *_EMPTY_NODE = nil;
     static dispatch_once_t once;
     dispatch_once(&once, ^{
-        _EMPTY_NODE = [[JDVectorNode alloc] initWithEdit:[[JDAtomicReference alloc] initWithVal:nil]
+        _EMPTY_NODE = [[JDVectorNode alloc] initWithEdit:[[[JDAtomicReference alloc] initWithVal:nil] autorelease]
                                                   array:[NSMutableArray arrayWithCapacity:32]];
     });
     return [_EMPTY_NODE retain];
@@ -45,10 +45,10 @@
 #pragma mark - Initializers
 
 +(instancetype)createWithArray:(NSArray*)items {
-    JDTransientVector *ret = [[[JDPersistentVector EMPTY] asTransient] autorelease];
+    JDTransientVector *ret = [[JDPersistentVector EMPTY] asTransient];
     for (id o in items)
         ret = [ret cons:o];
-    return [[ret persistent] autorelease];
+    return [ret persistent];
 }
 
 -(instancetype)initWithCnt:(unsigned)c shift:(unsigned)s root:(JDVectorNode*)r tail:(NSArray*)t {
@@ -73,7 +73,7 @@
 #pragma mark - Transient
 
 -(JDTransientVector*)asTransient {
-    return [[JDTransientVector vectorWithVector:self] retain];
+    return [JDTransientVector vectorWithVector:self];
 }
 
 #pragma mark - Util
@@ -127,15 +127,17 @@ JDVectorNode *doAssoc(unsigned level, JDVectorNode *node, unsigned i, id val) {
             NSMutableArray *mutableTail = [NSMutableArray arrayWithArray:self.tail];
             mutableTail[i & 0x01f] = (val != nil ? val : [NSNull null]);
             NSArray *newTail = [NSArray arrayWithArray:mutableTail];
-            return [[JDPersistentVector alloc] initWithCnt:self.cnt
+            return [[[JDPersistentVector alloc] initWithCnt:self.cnt
                                                      shift:self.shift
                                                       root:self.root
-                                                      tail:newTail];
+                                                      tail:newTail]
+                    autorelease];
         }
-        return [[JDPersistentVector alloc] initWithCnt:self.cnt
+        return [[[JDPersistentVector alloc] initWithCnt:self.cnt
                                                  shift:self.shift
                                                   root:doAssoc(self.shift, self.root, i, val)
-                                                  tail:self.tail];
+                                                  tail:self.tail]
+                autorelease];
     }
     if (i == self.cnt)
         return [self cons:val];
@@ -170,10 +172,11 @@ JDVectorNode *doAssoc(unsigned level, JDVectorNode *node, unsigned i, id val) {
         NSMutableArray *mutableTail = [[self.tail mutableCopy] autorelease];
         [mutableTail addObject:(val != nil ? val : [NSNull null])];
         NSArray *newTail = [NSArray arrayWithArray:mutableTail];
-        return [[JDPersistentVector alloc] initWithCnt:self.cnt + 1
+        return [[[JDPersistentVector alloc] initWithCnt:self.cnt + 1
                                                  shift:self.shift
                                                   root:self.root
-                                                  tail:newTail];
+                                                  tail:newTail]
+                autorelease];
     }
     // Full tail, push into tree
     JDVectorNode *newroot;
@@ -190,7 +193,7 @@ JDVectorNode *doAssoc(unsigned level, JDVectorNode *node, unsigned i, id val) {
         newshift += 5;
     } else
         newroot = [self pushTailAt:self.shift parent:self.root tail:tailnode];
-    return [[JDPersistentVector alloc] initWithCnt:self.cnt + 1 shift:newshift root:newroot tail:@[val]];
+    return [[[JDPersistentVector alloc] initWithCnt:self.cnt + 1 shift:newshift root:newroot tail:@[val]] autorelease];
 }
 
 @end

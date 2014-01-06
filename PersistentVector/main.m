@@ -17,6 +17,7 @@ int main(int argc, const char * argv[])
         @autoreleasepool {
             
             // insert code here...
+//            unsigned c = 1048608;
             unsigned c = 32801;
 //            unsigned c = 1057;
 //            unsigned c = 1024;
@@ -30,23 +31,30 @@ int main(int argc, const char * argv[])
 //            JDPersistentVector *v = [JDPersistentVector createWithArray:items];
 //            NSLog(@"%d", [v count]);
 
-//            for (NSNumber *n in items)
-//                v = [v cons:n];
-            unsigned chunksize = 32;
-            for (int i = 0; i < items.count; i += chunksize) {
-                [v autorelease];
-                @autoreleasepool {
-                    for (NSNumber *n in [items subarrayWithRange:NSMakeRange(i, (i+chunksize > items.count ? (items.count%chunksize) : chunksize))]) {
-                        v = [v cons:n];
-                    }
-                    [v retain];
-                }
+            for (NSNumber *n in items) {
+                JDPersistentVector *newV = [v cons:n];
+                [v release];
+                v = newV;
             }
-            [v autorelease];
-            //        JDTransientVector *v = [JDTransientVector vectorWithVector:[JDPersistentVector EMPTY]];
-            //        for (NSNumber *n in items) {
-            //            [v cons:n];
-            //        }
+            [v release];
+//            unsigned chunksize = 32;
+//            for (int i = 0; i < items.count; i += chunksize) {
+//                @autoreleasepool {
+//
+//                [v autorelease];
+//                @autoreleasepool {
+//                    for (int j = i; j < i + chunksize && j < items.count; ++j) {
+//                        v = [v cons:items[j]];
+//                    }
+//                    [v retain];
+//                }
+//                }
+//            }
+//            [v autorelease];
+//                    JDTransientVector *v = [JDTransientVector vectorWithVector:[JDPersistentVector EMPTY]];
+//                    for (NSNumber *n in items) {
+//                        [v cons:n];
+//                    }
             
 //            NSLog(@"count: %u", [v count]);
 //            NSLog(@"shift: %u", v.shift);

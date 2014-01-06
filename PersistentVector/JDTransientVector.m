@@ -17,7 +17,7 @@ JDVectorNode *editableRoot(JDVectorNode *node) {
 }
 
 NSMutableArray *editableTail(NSArray *tail) {
-    NSMutableArray *ret = [NSMutableArray arrayWithCapacity:32];
+    NSMutableArray *ret = [[NSMutableArray alloc] initWithCapacity:32];
     [ret addObjectsFromArray:tail];
     return ret;
 }
@@ -50,8 +50,10 @@ NSMutableArray *editableTail(NSArray *tail) {
 -(JDPersistentVector*)persistent {
     [self ensureEditable];
     self.root.edit.val = nil;
-    NSArray *trimmedTail = [NSArray arrayWithArray:self.tail];
-    return [[[JDPersistentVector alloc] initWithCnt:self.cnt shift:self.shift root:self.root tail:trimmedTail] autorelease];
+    NSMutableArray *trimmedTail = [self.tail copy];
+    JDPersistentVector * pv = [[JDPersistentVector alloc] initWithCnt:self.cnt shift:self.shift root:self.root tail:trimmedTail];
+    [trimmedTail release];
+    return pv;
 }
 
 #pragma mark - Util

@@ -36,7 +36,7 @@ int main(int argc, const char * argv[])
                 [v release];
                 v = newV;
             }
-            [v release];
+//            [v release];
 //            unsigned chunksize = 32;
 //            for (int i = 0; i < items.count; i += chunksize) {
 //                @autoreleasepool {
@@ -65,6 +65,7 @@ int main(int argc, const char * argv[])
 //            for (i = [v count] - 5; i < [v count]; ++i) {
 //                NSLog(@"%d: %@", i, [v nth:i]);
 //            }
+            [v release];
         }
     }
     }

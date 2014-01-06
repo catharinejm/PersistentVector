@@ -124,9 +124,17 @@ JDVectorNode *doAssoc(unsigned level, JDVectorNode *node, unsigned i, id val) {
 -(instancetype)assocN:(unsigned int)i object:(id)val {
     if (i < self.cnt) {
         if (i >= [self tailoff]) {
-            NSMutableArray *mutableTail = [NSMutableArray arrayWithArray:self.tail];
-            mutableTail[i & 0x01f] = (val != nil ? val : [NSNull null]);
-            NSArray *newTail = [NSArray arrayWithArray:mutableTail];
+            unsigned tailIdx = i & 0x01f;
+            NSArray *newTail;
+            val = (val != nil ? val : [NSNull null]);
+            if (self.tail.count == 1)
+                newTail = @[val];
+            else if (tailIdx == self.tail.count - 1)
+                newTail = [[self.tail subarrayWithRange:NSMakeRange(0, self.tail.count - 1)] arrayByAddingObject:val];
+            else
+                newTail = [[[self.tail subarrayWithRange:NSMakeRange(0, tailIdx)] arrayByAddingObject:val]
+                           arrayByAddingObjectsFromArray:[self.tail subarrayWithRange:NSMakeRange(tailIdx+1, self.tail.count-tailIdx-1)]];
+            
             return [[[JDPersistentVector alloc] initWithCnt:self.cnt
                                                      shift:self.shift
                                                       root:self.root
@@ -142,7 +150,7 @@ JDVectorNode *doAssoc(unsigned level, JDVectorNode *node, unsigned i, id val) {
     if (i == self.cnt)
         return [self cons:val];
     @throw [NSException exceptionWithName:NSRangeException
-                                   reason:[NSString stringWithFormat:@"index %du out of range", i]
+                                   reason:[NSString stringWithFormat:@"index %d out of range", i]
                                  userInfo:nil];
 }
 
@@ -169,9 +177,7 @@ JDVectorNode *doAssoc(unsigned level, JDVectorNode *node, unsigned i, id val) {
 -(instancetype)cons:(id)val {
     // Room in tail?
     if (self.cnt - [self tailoff] < 32) {
-        NSMutableArray *mutableTail = [[self.tail mutableCopy] autorelease];
-        [mutableTail addObject:(val != nil ? val : [NSNull null])];
-        NSArray *newTail = [NSArray arrayWithArray:mutableTail];
+        NSArray *newTail = [self.tail arrayByAddingObject:(val != nil ? val : [NSNull null])];
         return [[[JDPersistentVector alloc] initWithCnt:self.cnt + 1
                                                  shift:self.shift
                                                   root:self.root

@@ -29,7 +29,9 @@ int main(int argc, const char * argv[])
             JDPersistentVector *v = [JDPersistentVector EMPTY];
 //            JDPersistentVector *v = [JDPersistentVector createWithArray:items];
 //            NSLog(@"%d", [v count]);
-            
+
+//            for (NSNumber *n in items)
+//                v = [v cons:n];
             unsigned chunksize = 32;
             for (int i = 0; i < items.count; i += chunksize) {
                 [v autorelease];
@@ -40,6 +42,7 @@ int main(int argc, const char * argv[])
                     [v retain];
                 }
             }
+            [v autorelease];
             //        JDTransientVector *v = [JDTransientVector vectorWithVector:[JDPersistentVector EMPTY]];
             //        for (NSNumber *n in items) {
             //            [v cons:n];

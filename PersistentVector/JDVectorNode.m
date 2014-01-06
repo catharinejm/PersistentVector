@@ -23,7 +23,7 @@
     self = [super init];
     if (self) {
         _edit = [ed retain];
-        _array = [NSMutableArray arrayWithCapacity:32];
+        _array = [[NSMutableArray arrayWithCapacity:32] retain];
     }
     return self;
 }

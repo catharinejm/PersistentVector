@@ -12,7 +12,7 @@
 
 JDVectorNode *editableRoot(JDVectorNode *node) {
     return [[[JDVectorNode alloc] initWithEdit:[JDAtomicReference referenceWithVal:[NSThread currentThread]]
-                                        array:[[node.array copy] autorelease]]
+                                        array:[[node.array mutableCopy] autorelease]]
             autorelease];
 }
 
@@ -72,7 +72,7 @@ NSMutableArray *editableTail(NSArray *tail) {
 -(JDVectorNode*)ensureEditableNode:(JDVectorNode*)node {
     if (node.edit == self.root.edit)
         return node;
-    return [[[JDVectorNode alloc] initWithEdit:self.root.edit array:[[node.array copy] autorelease]] autorelease];
+    return [[[JDVectorNode alloc] initWithEdit:self.root.edit array:[[node.array mutableCopy] autorelease]] autorelease];
 }
 
 -(unsigned)tailoff {
@@ -143,7 +143,7 @@ NSMutableArray *editableTail(NSArray *tail) {
     unsigned newshift = self.shift;
     
     // Overflow root?
-    if ((self.cnt >> 5) < (1 << self.shift)) {
+    if ((self.cnt >> 5) > (1 << self.shift)) {
         newroot = [[[JDVectorNode alloc] initWithEdit:self.root.edit] autorelease];
         [newroot.array addObject:self.root];
         [newroot.array addObject:newPath(self.root.edit, self.shift, tailnode)];

@@ -94,7 +94,7 @@
         return node.array;
     }
     @throw [NSException exceptionWithName:NSRangeException
-                                   reason:[NSString stringWithFormat:@"index %du out of bounds", i]
+                                   reason:[NSString stringWithFormat:@"index %d out of bounds", i]
                                  userInfo:nil];
 }
 
@@ -111,7 +111,7 @@
 }
 
 JDVectorNode *doAssoc(unsigned level, JDVectorNode *node, unsigned i, id val) {
-    JDVectorNode *ret = [[JDVectorNode alloc] initWithEdit:node.edit array:[[node.array copy] autorelease]];
+    JDVectorNode *ret = [[JDVectorNode alloc] initWithEdit:node.edit array:[[node.array mutableCopy] autorelease]];
     if (level == 0)
         ret.array[i & 0x01f] = (val != nil ? val : [NSNull null]);
     else {
@@ -150,7 +150,7 @@ JDVectorNode *doAssoc(unsigned level, JDVectorNode *node, unsigned i, id val) {
 
 -(JDVectorNode*)pushTailAt:(unsigned)level parent:(JDVectorNode*)parent tail:(JDVectorNode*)tailnode {
     int subidx = ((self.cnt - 1) >> level) & 0x01f;
-    JDVectorNode *ret = [[JDVectorNode alloc] initWithEdit:parent.edit array:[[parent.array copy] autorelease]];
+    JDVectorNode *ret = [[JDVectorNode alloc] initWithEdit:parent.edit array:[[parent.array mutableCopy] autorelease]];
     JDVectorNode *nodeToInsert;
     if (level == 5)
         nodeToInsert = tailnode;

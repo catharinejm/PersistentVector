@@ -17,10 +17,10 @@
 @property (nonatomic) unsigned cnt;
 @property (nonatomic) unsigned shift;
 @property (nonatomic, retain) JDVectorNode *root;
-@property (nonatomic, retain) NSMutableArray *tail;
+@property (nonatomic, retain) NSPointerArray *tail;
 
 +(instancetype)vectorWithVector:(id<JDIVector>)vec;
--(instancetype)initWithCnt:(unsigned)c shift:(unsigned)s root:(JDVectorNode*)r tail:(NSMutableArray*)t;
+-(instancetype)initWithCnt:(unsigned)c shift:(unsigned)s root:(JDVectorNode*)r tail:(NSPointerArray*)t;
 
 -(JDPersistentVector*)persistent;
 

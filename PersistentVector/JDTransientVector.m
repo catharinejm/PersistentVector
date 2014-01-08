@@ -12,14 +12,12 @@
 
 JDVectorNode *editableRoot(JDVectorNode *node) {
     return [[[JDVectorNode alloc] initWithEdit:[JDAtomicReference referenceWithVal:[NSThread currentThread]]
-                                        array:[[node.array mutableCopy] autorelease]]
+                                        array:[[node.array copy] autorelease]]
             autorelease];
 }
 
-NSMutableArray *editableTail(NSArray *tail) {
-    NSMutableArray *ret = [NSMutableArray arrayWithCapacity:32];
-    [ret addObjectsFromArray:tail];
-    return ret;
+NSPointerArray *editableTail(NSPointerArray *tail) {
+    return [[tail copy] autorelease];
 }
 
 @implementation JDTransientVector
@@ -34,7 +32,7 @@ NSMutableArray *editableTail(NSArray *tail) {
             autorelease];
 }
 
--(instancetype)initWithCnt:(unsigned)c shift:(unsigned)s root:(JDVectorNode*)r tail:(NSMutableArray*)t {
+-(instancetype)initWithCnt:(unsigned)c shift:(unsigned)s root:(JDVectorNode*)r tail:(NSPointerArray*)t {
     self=[super init];
     if (self) {
         _cnt = c;
@@ -50,8 +48,8 @@ NSMutableArray *editableTail(NSArray *tail) {
 -(JDPersistentVector*)persistent {
     [self ensureEditable];
     self.root.edit.val = nil;
-    NSArray *trimmedTail = [NSArray arrayWithArray:self.tail];
-    return [[[JDPersistentVector alloc] initWithCnt:self.cnt shift:self.shift root:self.root tail:trimmedTail] autorelease];
+    return [[[JDPersistentVector alloc] initWithCnt:self.cnt shift:self.shift root:self.root tail:[[self.tail copy] autorelease]]
+            autorelease];
 }
 
 #pragma mark - Util
@@ -72,7 +70,7 @@ NSMutableArray *editableTail(NSArray *tail) {
 -(JDVectorNode*)ensureEditableNode:(JDVectorNode*)node {
     if (node.edit == self.root.edit)
         return node;
-    return [[[JDVectorNode alloc] initWithEdit:self.root.edit array:[[node.array mutableCopy] autorelease]] autorelease];
+    return [[[JDVectorNode alloc] initWithEdit:self.root.edit array:[[node.array copy] autorelease]] autorelease];
 }
 
 -(unsigned)tailoff {
@@ -81,13 +79,13 @@ NSMutableArray *editableTail(NSArray *tail) {
     return ((self.cnt-1) >> 5) << 5;
 }
 
--(NSMutableArray*)arrayFor:(unsigned)i {
+-(NSPointerArray*)arrayFor:(unsigned)i {
     if (i < self.cnt) {
         if (i >= [self tailoff])
             return self.tail;
         JDVectorNode *node = self.root;
         for (int level = (int)self.shift; level > 0; level -= 5)
-            node = (JDVectorNode*)node.array[(i >> level) & 0x01f];
+            node = [((JDVectorNode*)node).array pointerAtIndex:(i >> level) & 0x01f];
         return node.array;
     }
     @throw [NSException exceptionWithName:NSRangeException
@@ -95,17 +93,17 @@ NSMutableArray *editableTail(NSArray *tail) {
                                  userInfo:nil];
 }
 
--(NSMutableArray*)editableArrayFor:(unsigned)i {
+-(NSPointerArray*)editableArrayFor:(unsigned)i {
     if (i < self.cnt) {
         if (i >= [self tailoff])
             return self.tail;
         JDVectorNode *node = self.root;
         for (int level = (int)self.shift; level > 0; level -= 5)
-            node = [self ensureEditableNode:(JDVectorNode*)node.array[(i >> level) & 0x01f]];
+            node = [self ensureEditableNode:[((JDVectorNode*)node).array pointerAtIndex:(i >> level) & 0x01f]];
         return node.array;
     }
     @throw [NSException exceptionWithName:NSRangeException
-                                   reason:[NSString stringWithFormat:@"index %du out of bounds", i]
+                                   reason:[NSString stringWithFormat:@"index %d out of bounds", i]
                                  userInfo:nil];
 }
 
@@ -120,9 +118,9 @@ NSMutableArray *editableTail(NSArray *tail) {
         if (subidx >= parent.array.count)
             nodeToInsert = newPath(self.root.edit, level - 5, tailnode);
         else
-            nodeToInsert = [self pushTailAt:level - 5 parent:(JDVectorNode*)parent.array[subidx] tail:tailnode];
+            nodeToInsert = [self pushTailAt:level - 5 parent:[((JDVectorNode*)parent).array pointerAtIndex:subidx] tail:tailnode];
     }
-    [ret.array addObject:nodeToInsert];
+    [ret.array addPointer:nodeToInsert];
     return ret;
 }
 
@@ -131,22 +129,22 @@ NSMutableArray *editableTail(NSArray *tail) {
     int i = self.cnt;
     // room in tail?
     if (i - [self tailoff] < 32) {
-        [self.tail addObject:(val != nil ? val : [NSNull null])];
-        _cnt++;
+        [self.tail addPointer:val];
+         _cnt++;
         return self;
     }
     // Full tail, push into tree
     JDVectorNode *newroot;
     JDVectorNode *tailnode = [[[JDVectorNode alloc] initWithEdit:self.root.edit array:self.tail] autorelease];
-    self.tail = [NSMutableArray arrayWithCapacity:32];
-    [self.tail addObject:(val != nil ? val : [NSNull null])];
+    self.tail = [NSPointerArray strongObjectsPointerArray];
+    [self.tail addPointer:val];
     unsigned newshift = self.shift;
     
     // Overflow root?
     if ((self.cnt >> 5) > (1 << self.shift)) {
         newroot = [[[JDVectorNode alloc] initWithEdit:self.root.edit] autorelease];
-        [newroot.array addObject:self.root];
-        [newroot.array addObject:newPath(self.root.edit, self.shift, tailnode)];
+        [newroot.array addPointer:self.root];
+        [newroot.array addPointer:newPath(self.root.edit, self.shift, tailnode)];
         newshift += 5;
     } else
         newroot = [self pushTailAt:self.shift parent:self.root tail:tailnode];
@@ -158,9 +156,7 @@ NSMutableArray *editableTail(NSArray *tail) {
 
 -(id)nth:(unsigned)i {
     [self ensureEditable];
-    id v = [self arrayFor:i][i & 0x01f];
-    if (v == [NSNull null]) return nil;
-    return v;
+    return [[self arrayFor:i] pointerAtIndex:i & 0x01f];
 }
 
 -(id)nth:(unsigned int)i notFound:(id)nf {
@@ -173,10 +169,10 @@ NSMutableArray *editableTail(NSArray *tail) {
     node = [self ensureEditableNode:node];
     JDVectorNode *ret = node;
     if (level == 0)
-        ret.array[i & 0x01f] = (val != nil ? val : [NSNull null]);
+        [ret.array replacePointerAtIndex:(i & 0x01f) withPointer:val];
     else {
         unsigned subidx = (i >> level) & 0x01f;
-        ret.array[subidx] = [self doAssocAt:level - 5 node:(JDVectorNode*)node.array[subidx] index:i object:val];
+        [ret.array replacePointerAtIndex:subidx withPointer:[self doAssocAt:level - 5 node:[((JDVectorNode*)node).array pointerAtIndex:subidx] index:i object:val]];
     }
     return ret;
 }
@@ -185,7 +181,7 @@ NSMutableArray *editableTail(NSArray *tail) {
     [self ensureEditable];
     if (i < self.cnt) {
         if (i >= [self tailoff]) {
-            self.tail[i & 0x01f] = (val != nil ? val : [NSNull null]);
+            [self.tail replacePointerAtIndex:i & 0x01f withPointer:val];
             return self;
         }
         

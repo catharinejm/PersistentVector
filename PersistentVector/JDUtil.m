@@ -12,6 +12,6 @@ JDVectorNode *newPath(JDAtomicReference *edit, unsigned level, JDVectorNode *nod
     if (level == 0)
         return node;
     JDVectorNode *ret = [[[JDVectorNode alloc] initWithEdit:edit] autorelease];
-    [ret.array addObject:newPath(edit, level - 5, node)];
+    [ret.array addPointer:newPath(edit, level - 5, node)];
     return ret;
 }

@@ -17,13 +17,13 @@
 @property (nonatomic, readonly) unsigned cnt;
 @property (nonatomic, readonly) unsigned shift;
 @property (nonatomic, readonly) JDVectorNode *root;
-@property (nonatomic, readonly) NSArray *tail;
+@property (nonatomic, readonly) NSPointerArray *tail;
 
 +(JDVectorNode*)EMPTY_NODE;
 +(JDPersistentVector*)EMPTY;
 
 +(instancetype)createWithArray:(NSArray*)items;
--(instancetype)initWithCnt:(unsigned)c shift:(unsigned)s root:(JDVectorNode*)r tail:(NSArray*)t;
+-(instancetype)initWithCnt:(unsigned)c shift:(unsigned)s root:(JDVectorNode*)r tail:(NSPointerArray*)t;
 
 -(JDTransientVector*)asTransient;
 

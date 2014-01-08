@@ -12,12 +12,13 @@
 
 int main(int argc, const char * argv[])
 {
-    for (int q=0;q<10;++q) {
-    for (int x = 0; x < 10; ++x) {
+//    for (int q=0;q<10;++q) {
+//    for (int x = 0; x < 10; ++x) {
         @autoreleasepool {
             
             // insert code here...
-            unsigned c = 32801;
+            unsigned c = 1048609;
+//            unsigned c = 32801;
 //            unsigned c = 1057;
 //            unsigned c = 1024;
 //            unsigned c = 33;
@@ -26,23 +27,23 @@ int main(int argc, const char * argv[])
             for (int i = 0; i < c; ++i)
                 [items addObject:[NSNumber numberWithInt:i]];
 
-            JDPersistentVector *v = [JDPersistentVector EMPTY];
-//            JDPersistentVector *v = [JDPersistentVector createWithArray:items];
+//            JDPersistentVector *v = [JDPersistentVector EMPTY];
+            JDPersistentVector *v = [JDPersistentVector createWithArray:items];
 //            NSLog(@"%d", [v count]);
 
 //            for (NSNumber *n in items)
 //                v = [v cons:n];
-            unsigned chunksize = 32;
-            for (int i = 0; i < items.count; i += chunksize) {
-                [v autorelease];
-                @autoreleasepool {
-                    for (NSNumber *n in [items subarrayWithRange:NSMakeRange(i, (i+chunksize > items.count ? (items.count%chunksize) : chunksize))]) {
-                        v = [v cons:n];
-                    }
-                    [v retain];
-                }
-            }
-            [v autorelease];
+//            unsigned chunksize = 32;
+//            for (int i = 0; i < items.count; i += chunksize) {
+//                [v autorelease];
+//                @autoreleasepool {
+//                    for (NSNumber *n in [items subarrayWithRange:NSMakeRange(i, (i+chunksize > items.count ? (items.count%chunksize) : chunksize))]) {
+//                        v = [v cons:n];
+//                    }
+//                    [v retain];
+//                }
+//            }
+//            [v autorelease];
             //        JDTransientVector *v = [JDTransientVector vectorWithVector:[JDPersistentVector EMPTY]];
             //        for (NSNumber *n in items) {
             //            [v cons:n];
@@ -58,8 +59,8 @@ int main(int argc, const char * argv[])
 //                NSLog(@"%d: %@", i, [v nth:i]);
 //            }
         }
-    }
-    }
+//    }
+//    }
     return 0;
 }
 

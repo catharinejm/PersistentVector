@@ -12,9 +12,9 @@
 @interface JDVectorNode : NSObject
 
 @property (nonatomic, retain) JDAtomicReference *edit;
-@property (nonatomic, retain) NSMutableArray *array;
+@property (nonatomic, retain) NSPointerArray *array;
 
--(id)initWithEdit:(JDAtomicReference*)ed array:(NSMutableArray*)ary;
+-(id)initWithEdit:(JDAtomicReference*)ed array:(NSPointerArray*)ary;
 -(id)initWithEdit:(JDAtomicReference*)ed;
 
 @end

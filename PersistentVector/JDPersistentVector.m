@@ -28,7 +28,7 @@
     static JDPersistentVector *_EMPTY = nil;
     static dispatch_once_t once;
     dispatch_once(&once, ^{
-        _EMPTY = [[JDPersistentVector alloc] initWithCnt:0 shift:5 root:[JDPersistentVector EMPTY_NODE] tail:[NSArray array]];
+        _EMPTY = [[JDPersistentVector alloc] initWithCnt:0 shift:5 root:[JDPersistentVector EMPTY_NODE] tail:[[[JDContainer alloc] init] autorelease]];
     });
     return [_EMPTY retain];
 }
@@ -42,7 +42,7 @@
     return [ret persistent];
 }
 
--(instancetype)initWithCnt:(unsigned)c shift:(unsigned)s root:(JDVectorNode*)r tail:(NSArray*)t {
+-(instancetype)initWithCnt:(unsigned)c shift:(unsigned)s root:(JDVectorNode*)r tail:(JDContainer*)t {
     self=[super init];
     if (self) {
         _cnt = c;
@@ -75,7 +75,7 @@
     return ((self.cnt - 1) >> 5) << 5;
 }
 
--(NSArray*)arrayFor:(unsigned int)i {
+-(JDContainer*)arrayFor:(unsigned int)i {
     if (i < self.cnt) {
         if (i >= [self tailoff])
             return self.tail;
@@ -115,17 +115,8 @@ JDVectorNode *doAssoc(unsigned level, JDVectorNode *node, unsigned i, id val) {
 -(instancetype)assocN:(unsigned int)i object:(id)val {
     if (i < self.cnt) {
         if (i >= [self tailoff]) {
-            unsigned tailIdx = i & 0x01f;
-            NSArray *newTail;
-            val = (val != nil ? val : [NSNull null]);
-            if (self.tail.count == 1)
-                newTail = @[val];
-            else if (tailIdx == self.tail.count - 1)
-                newTail = [[self.tail subarrayWithRange:NSMakeRange(0, self.tail.count - 1)] arrayByAddingObject:val];
-            else
-                newTail = [[[self.tail subarrayWithRange:NSMakeRange(0, tailIdx)] arrayByAddingObject:val]
-                           arrayByAddingObjectsFromArray:[self.tail subarrayWithRange:NSMakeRange(tailIdx+1, self.tail.count-tailIdx-1)]];
-            
+            JDContainer *newTail = [[self.tail copy] autorelease];
+            newTail[i & 0x01f] = val;
             return [[[JDPersistentVector alloc] initWithCnt:self.cnt
                                                      shift:self.shift
                                                       root:self.root
@@ -168,7 +159,8 @@ JDVectorNode *doAssoc(unsigned level, JDVectorNode *node, unsigned i, id val) {
 -(instancetype)cons:(id)val {
     // Room in tail?
     if (self.cnt - [self tailoff] < 32) {
-        NSArray *newTail = [self.tail arrayByAddingObject:(val != nil ? val : [NSNull null])];
+        JDContainer *newTail = [[self.tail copy] autorelease];
+        [newTail addObject:val];
         return [[[JDPersistentVector alloc] initWithCnt:self.cnt + 1
                                                  shift:self.shift
                                                   root:self.root
@@ -190,7 +182,11 @@ JDVectorNode *doAssoc(unsigned level, JDVectorNode *node, unsigned i, id val) {
         newshift += 5;
     } else
         newroot = [self pushTailAt:self.shift parent:self.root tail:tailnode];
-    return [[[JDPersistentVector alloc] initWithCnt:self.cnt + 1 shift:newshift root:newroot tail:@[val]] autorelease];
+    return [[[JDPersistentVector alloc] initWithCnt:self.cnt + 1
+                                              shift:newshift
+                                               root:newroot
+                                               tail:[JDContainer containerWithObject:val]]
+            autorelease];
 }
 
 @end

@@ -12,14 +12,12 @@
 
 JDVectorNode *editableRoot(JDVectorNode *node) {
     return [[[JDVectorNode alloc] initWithEdit:[JDAtomicReference referenceWithVal:[NSThread currentThread]]
-                                        array:[[node.array mutableCopy] autorelease]]
+                                        array:[[node.array copy] autorelease]]
             autorelease];
 }
 
-NSMutableArray *editableTail(NSArray *tail) {
-    NSMutableArray *ret = [NSMutableArray arrayWithCapacity:32];
-    [ret addObjectsFromArray:tail];
-    return ret;
+JDContainer *editableTail(JDContainer *tail) {
+    return [[tail copy] autorelease];
 }
 
 @implementation JDTransientVector
@@ -34,7 +32,7 @@ NSMutableArray *editableTail(NSArray *tail) {
             autorelease];
 }
 
--(instancetype)initWithCnt:(unsigned)c shift:(unsigned)s root:(JDVectorNode*)r tail:(NSMutableArray*)t {
+-(instancetype)initWithCnt:(unsigned)c shift:(unsigned)s root:(JDVectorNode*)r tail:(JDContainer*)t {
     self=[super init];
     if (self) {
         _cnt = c;
@@ -50,8 +48,11 @@ NSMutableArray *editableTail(NSArray *tail) {
 -(JDPersistentVector*)persistent {
     [self ensureEditable];
     self.root.edit.val = nil;
-    NSArray *trimmedTail = [NSArray arrayWithArray:self.tail];
-    return [[[JDPersistentVector alloc] initWithCnt:self.cnt shift:self.shift root:self.root tail:trimmedTail] autorelease];
+    return [[[JDPersistentVector alloc] initWithCnt:self.cnt
+                                              shift:self.shift
+                                               root:self.root
+                                               tail:[[self.tail copy] autorelease]]
+            autorelease];
 }
 
 #pragma mark - Util
@@ -72,7 +73,7 @@ NSMutableArray *editableTail(NSArray *tail) {
 -(JDVectorNode*)ensureEditableNode:(JDVectorNode*)node {
     if (node.edit == self.root.edit)
         return node;
-    return [[[JDVectorNode alloc] initWithEdit:self.root.edit array:[[node.array mutableCopy] autorelease]] autorelease];
+    return [[[JDVectorNode alloc] initWithEdit:self.root.edit array:[[node.array copy] autorelease]] autorelease];
 }
 
 -(unsigned)tailoff {
@@ -81,7 +82,7 @@ NSMutableArray *editableTail(NSArray *tail) {
     return ((self.cnt-1) >> 5) << 5;
 }
 
--(NSMutableArray*)arrayFor:(unsigned)i {
+-(JDContainer*)arrayFor:(unsigned)i {
     if (i < self.cnt) {
         if (i >= [self tailoff])
             return self.tail;
@@ -95,7 +96,7 @@ NSMutableArray *editableTail(NSArray *tail) {
                                  userInfo:nil];
 }
 
--(NSMutableArray*)editableArrayFor:(unsigned)i {
+-(JDContainer*)editableArrayFor:(unsigned)i {
     if (i < self.cnt) {
         if (i >= [self tailoff])
             return self.tail;
@@ -138,8 +139,8 @@ NSMutableArray *editableTail(NSArray *tail) {
     // Full tail, push into tree
     JDVectorNode *newroot;
     JDVectorNode *tailnode = [[[JDVectorNode alloc] initWithEdit:self.root.edit array:self.tail] autorelease];
-    self.tail = [NSMutableArray arrayWithCapacity:32];
-    [self.tail addObject:(val != nil ? val : [NSNull null])];
+    self.tail = [JDContainer container];
+    [self.tail addObject:val];
     unsigned newshift = self.shift;
     
     // Overflow root?
@@ -158,9 +159,7 @@ NSMutableArray *editableTail(NSArray *tail) {
 
 -(id)nth:(unsigned)i {
     [self ensureEditable];
-    id v = [self arrayFor:i][i & 0x01f];
-    if (v == [NSNull null]) return nil;
-    return v;
+    return [self arrayFor:i][i & 0x01f];
 }
 
 -(id)nth:(unsigned int)i notFound:(id)nf {
@@ -185,7 +184,7 @@ NSMutableArray *editableTail(NSArray *tail) {
     [self ensureEditable];
     if (i < self.cnt) {
         if (i >= [self tailoff]) {
-            self.tail[i & 0x01f] = (val != nil ? val : [NSNull null]);
+            self.tail[i & 0x01f] = val;
             return self;
         }
         

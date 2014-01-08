@@ -10,16 +10,7 @@
 #import "JDTransientVector.h"
 #import "JDUtil.h"
 
-@interface JDPersistentVector ()
-
-@property (nonatomic, readonly) JDVectorNode *EMPTY_NODE;
-@property (nonatomic, readonly) JDPersistentVector *EMPTY;
-
-@end
-
 @implementation JDPersistentVector
-@dynamic EMPTY_NODE;
-@dynamic EMPTY;
 
 #pragma mark - Empty Constants
 

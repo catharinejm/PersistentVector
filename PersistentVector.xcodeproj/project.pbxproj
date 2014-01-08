@@ -15,6 +15,7 @@
 		FC97F9061878EF3700D4CFB3 /* JDPersistentVector.m in Sources */ = {isa = PBXBuildFile; fileRef = FC97F9051878EF3700D4CFB3 /* JDPersistentVector.m */; };
 		FC97F9091879B1C700D4CFB3 /* JDTransientVector.m in Sources */ = {isa = PBXBuildFile; fileRef = FC97F9081879B1C700D4CFB3 /* JDTransientVector.m */; };
 		FC97F90D187A0A7900D4CFB3 /* JDUtil.m in Sources */ = {isa = PBXBuildFile; fileRef = FC97F90C187A0A7900D4CFB3 /* JDUtil.m */; };
+		FCB7C487187DA3DB0075B684 /* JDContainer.m in Sources */ = {isa = PBXBuildFile; fileRef = FCB7C486187DA3DB0075B684 /* JDContainer.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -47,6 +48,8 @@
 		FC97F90A1879B34600D4CFB3 /* JDIVector.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = JDIVector.h; sourceTree = "<group>"; };
 		FC97F90B187A0A7900D4CFB3 /* JDUtil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JDUtil.h; sourceTree = "<group>"; };
 		FC97F90C187A0A7900D4CFB3 /* JDUtil.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = JDUtil.m; sourceTree = "<group>"; };
+		FCB7C485187DA3DB0075B684 /* JDContainer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JDContainer.h; sourceTree = "<group>"; };
+		FCB7C486187DA3DB0075B684 /* JDContainer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = JDContainer.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -93,6 +96,8 @@
 				FC97F90A1879B34600D4CFB3 /* JDIVector.h */,
 				FC97F9011878EEF400D4CFB3 /* JDAtomicReference.h */,
 				FC97F9021878EEF400D4CFB3 /* JDAtomicReference.m */,
+				FCB7C485187DA3DB0075B684 /* JDContainer.h */,
+				FCB7C486187DA3DB0075B684 /* JDContainer.m */,
 				FC97F9041878EF3700D4CFB3 /* JDPersistentVector.h */,
 				FC97F9051878EF3700D4CFB3 /* JDPersistentVector.m */,
 				FC97F9071879B1C700D4CFB3 /* JDTransientVector.h */,
@@ -170,6 +175,7 @@
 				FC97F9001878EEAC00D4CFB3 /* JDVectorNode.m in Sources */,
 				FC97F9091879B1C700D4CFB3 /* JDTransientVector.m in Sources */,
 				FC97F9061878EF3700D4CFB3 /* JDPersistentVector.m in Sources */,
+				FCB7C487187DA3DB0075B684 /* JDContainer.m in Sources */,
 				FC97F9031878EEF400D4CFB3 /* JDAtomicReference.m in Sources */,
 				FC97F8F41878DB1E00D4CFB3 /* main.m in Sources */,
 				FC97F90D187A0A7900D4CFB3 /* JDUtil.m in Sources */,
@@ -286,6 +292,7 @@
 				FC97F8FD1878DB1E00D4CFB3 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

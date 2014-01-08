@@ -19,7 +19,7 @@
     static dispatch_once_t once;
     dispatch_once(&once, ^{
         _EMPTY_NODE = [[JDVectorNode alloc] initWithEdit:[[[JDAtomicReference alloc] initWithVal:nil] autorelease]
-                                                  array:[NSMutableArray arrayWithCapacity:32]];
+                                                   array:[JDContainer container]];
     });
     return [_EMPTY_NODE retain];
 }
@@ -102,7 +102,7 @@
 }
 
 JDVectorNode *doAssoc(unsigned level, JDVectorNode *node, unsigned i, id val) {
-    JDVectorNode *ret = [[JDVectorNode alloc] initWithEdit:node.edit array:[[node.array mutableCopy] autorelease]];
+    JDVectorNode *ret = [[JDVectorNode alloc] initWithEdit:node.edit array:[[node.array copy] autorelease]];
     if (level == 0)
         ret.array[i & 0x01f] = (val != nil ? val : [NSNull null]);
     else {
@@ -142,7 +142,7 @@ JDVectorNode *doAssoc(unsigned level, JDVectorNode *node, unsigned i, id val) {
 
 -(JDVectorNode*)pushTailAt:(unsigned)level parent:(JDVectorNode*)parent tail:(JDVectorNode*)tailnode {
     int subidx = ((self.cnt - 1) >> level) & 0x01f;
-    JDVectorNode *ret = [[JDVectorNode alloc] initWithEdit:parent.edit array:[[parent.array mutableCopy] autorelease]];
+    JDVectorNode *ret = [[JDVectorNode alloc] initWithEdit:parent.edit array:[[parent.array copy] autorelease]];
     JDVectorNode *nodeToInsert;
     if (level == 5)
         nodeToInsert = tailnode;
@@ -170,7 +170,7 @@ JDVectorNode *doAssoc(unsigned level, JDVectorNode *node, unsigned i, id val) {
     // Full tail, push into tree
     JDVectorNode *newroot;
     JDVectorNode *tailnode = [[[JDVectorNode alloc] initWithEdit:self.root.edit
-                                                          array:[[self.tail mutableCopy] autorelease]]
+                                                          array:[[self.tail copy] autorelease]]
                               autorelease];
                               
     unsigned newshift = self.shift;

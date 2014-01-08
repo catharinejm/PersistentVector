@@ -10,7 +10,7 @@
 
 @implementation JDVectorNode
 
--(id)initWithEdit:(JDAtomicReference*)ed array:(NSMutableArray*)ary {
+-(id)initWithEdit:(JDAtomicReference*)ed array:(JDContainer*)ary {
     self = [super init];
     if (self) {
         _edit = [ed retain];
@@ -23,7 +23,7 @@
     self = [super init];
     if (self) {
         _edit = [ed retain];
-        _array = [[NSMutableArray arrayWithCapacity:32] retain];
+        _array = [[JDContainer container] retain];
     }
     return self;
 }

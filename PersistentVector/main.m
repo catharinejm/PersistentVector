@@ -12,7 +12,7 @@
 
 int main(int argc, const char * argv[])
 {
-    for (int q=0;q<10;++q) {
+    for (int q=0;q<1;++q) {
     for (int x = 0; x < 10; ++x) {
         @autoreleasepool {
             

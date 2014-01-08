@@ -132,7 +132,7 @@ JDContainer *editableTail(JDContainer *tail) {
     int i = self.cnt;
     // room in tail?
     if (i - [self tailoff] < 32) {
-        [self.tail addObject:(val != nil ? val : [NSNull null])];
+        [self.tail addObject:val];
         _cnt++;
         return self;
     }

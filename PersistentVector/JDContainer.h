@@ -16,12 +16,9 @@ id *JDNewContainer();
 
 +(instancetype)container;
 +(instancetype)containerWithObject:(id)o;
-+(instancetype)containerWithObjects:(id)o, ... NS_REQUIRES_NIL_TERMINATION;
 +(instancetype)containerWithContainer:(JDContainer*)c;
-+(instancetype)containerWithPointerArray:(NSPointerArray*)a;
 
 -(instancetype)init;
--(instancetype)initWithPointerArray:(NSPointerArray*)a;
 -(void)addObject:(id)o;
 -(instancetype)copy;
 -(id)objectAtIndexedSubscript:(NSUInteger)idx;

@@ -9,23 +9,36 @@
 #import "JDContainer.h"
 
 static NSString * const kJDContainerSpaceKey = @"JDContainerSpace";
-static NSString * const kJDContainerThresholdKey = @"JDContainerThreshold";
 static NSString * const kJDClaimedObjectsKey = @"JDClaimedObjects";
 
 #define kJDInitialThreshold 32768
 
 static NSHashTableOptions const JDClaimedOptions = (NSHashTableStrongMemory | NSHashTableObjectPointerPersonality);
 
+@interface JDContainerSpace : NSObject
+@property (nonatomic) NSUInteger count;
+@property (nonatomic) NSUInteger threshold;
+@property (nonatomic, retain) NSPointerArray *array;
+@end
+@implementation JDContainerSpace
+-(void)dealloc {
+    [_array release];
+    [super dealloc];
+}
+@end
+
 @implementation JDContainer {
     NSPointerArray *_ary;
 }
 
-@dynamic count;
-
-+(NSPointerArray*)containerSpace {
-    NSPointerArray *sp = [[NSThread currentThread] threadDictionary][kJDContainerSpaceKey];
++(JDContainerSpace*)containerSpace {
+    JDContainerSpace *sp = [[NSThread currentThread] threadDictionary][kJDContainerSpaceKey];
     if (!sp) {
-        sp = [NSPointerArray weakObjectsPointerArray];
+        sp = [[JDContainerSpace alloc] init];
+        sp.count = 0;
+        sp.threshold = kJDInitialThreshold;
+        sp.array = [NSPointerArray weakObjectsPointerArray];
+        [sp.array setCount:kJDInitialThreshold];
         [[NSThread currentThread] threadDictionary][kJDContainerSpaceKey] = sp;
     }
 
@@ -44,45 +57,38 @@ static NSHashTableOptions const JDClaimedOptions = (NSHashTableStrongMemory | NS
     [[NSThread currentThread] threadDictionary][kJDClaimedObjectsKey] = objs;
 }
 
-+(unsigned long)containerThreshold {
-    NSNumber *ct = [[NSThread currentThread] threadDictionary][kJDContainerThresholdKey];
-    if (!ct) {
-        ct = [NSNumber numberWithUnsignedLong:kJDInitialThreshold];
-        [[NSThread currentThread] threadDictionary][kJDContainerThresholdKey] = ct;
-    }
-    return ct.unsignedLongValue;
-}
-+(void)setContainerThreshold:(unsigned long)v {
-    [[NSThread currentThread] threadDictionary][kJDContainerThresholdKey] = [NSNumber numberWithUnsignedLong:v];
-}
-
 +(void)claimObject:(id)o {
     [[JDContainer claimedObjects] addObject:o];
 }
 
 +(void)addContainer:(NSPointerArray*)container {
-    NSPointerArray *sp = [JDContainer containerSpace];
-    unsigned long threshold = [JDContainer containerThreshold];
+    JDContainerSpace *sp = [JDContainer containerSpace];
     @autoreleasepool {
-        if (sp.count > threshold) {
-            threshold += threshold;
+        if (sp.count > sp.threshold) {
+            sp.threshold += sp.threshold;
             
-            [sp compact];
-
-            while (sp.count >= threshold)
-                threshold += threshold;
+            NSPointerArray *newAry = [NSPointerArray weakObjectsPointerArray];
+            [newAry setCount:sp.count];
+            for (NSUInteger i = 0; i < sp.count; ++i) {
+                void *p = [sp.array pointerAtIndex:i];
+                if (p)
+                    [newAry replacePointerAtIndex:i withPointer:p];
+            }
+            [newAry compact];
+            sp.count = newAry.count;
+            newAry.count = sp.threshold;
+            sp.array = newAry;
             
             NSHashTable *newClaim = [NSHashTable hashTableWithOptions:JDClaimedOptions];
-            for (NSPointerArray *ary in sp) {
+            for (NSPointerArray *ary in sp.array) {
                 for (id o in ary) {
                     [newClaim addObject:o];
                 }
             }
             [JDContainer setClaimedObjects:newClaim]; // Will release old set and all contained objects
-            [JDContainer setContainerThreshold:threshold];
         }
     }
-    [sp addPointer:container];
+    [sp.array replacePointerAtIndex:sp.count withPointer:container];
 }
 
 +(instancetype)container {
@@ -95,51 +101,35 @@ static NSHashTableOptions const JDClaimedOptions = (NSHashTableStrongMemory | NS
     return c;
 }
 
-+(instancetype)containerWithObjects:(id)o, ... {
-    if (o) {
-        NSPointerArray *ary = [NSPointerArray weakObjectsPointerArray];
-        va_list objs;
-        va_start(objs, o);
-        for (id x = o; x != nil; x = va_arg(objs, id)) {
-            [ary addPointer:x];
-        }
-        return [[[JDContainer alloc] initWithPointerArray:ary] autorelease];
-    }
-    return [[[JDContainer alloc] init] autorelease];
-}
-
 +(instancetype)containerWithContainer:(JDContainer *)c {
     return [[c copy] autorelease];
-}
-
-+(instancetype)containerWithPointerArray:(NSPointerArray *)a {
-    return [[[JDContainer alloc] initWithPointerArray:a] autorelease];
 }
 
 -(instancetype)init {
     self = [super init];
     if (self) {
+        _count = 0;
         _ary = [[NSPointerArray weakObjectsPointerArray] retain];
+        [_ary setCount:32];
         [JDContainer addContainer:_ary];
     }
     return self;
 }
 
--(instancetype)initWithPointerArray:(NSPointerArray*)a {
+-(instancetype)initWithPointerArray:(NSPointerArray*)a andCount:(NSUInteger)c {
     self = [super init];
     if (self) {
+        _count = c;
         _ary = [a retain];
+        [_ary setCount:32];
         [JDContainer addContainer:a];
     }
     return self;
 }
 
--(NSUInteger)count {
-    return _ary.count;
-}
-
 -(void)addObject:(id)o {
-    [_ary addPointer:o];
+    [_ary replacePointerAtIndex:_count withPointer:o];
+    ++_count;
     [JDContainer claimObject:o];
 }
 
@@ -160,7 +150,7 @@ static NSHashTableOptions const JDClaimedOptions = (NSHashTableStrongMemory | NS
 -(JDContainer*)copy {
     NSPointerArray *newAry = [_ary copy];
     [JDContainer addContainer:newAry];
-    return [[JDContainer alloc] initWithPointerArray:newAry];
+    return [[JDContainer alloc] initWithPointerArray:newAry andCount:_count];
 }
 
 @end

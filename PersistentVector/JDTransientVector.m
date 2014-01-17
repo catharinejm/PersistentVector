@@ -17,7 +17,7 @@ JDVectorNode *editableRoot(JDVectorNode *node) {
 }
 
 NSMutableArray *editableTail(NSArray *tail) {
-    NSMutableArray *ret = [NSMutableArray arrayWithCapacity:32];
+    NSMutableArray *ret = [NSMutableArray arrayWithCapacity:kPVNodeCapacity];
     [ret addObjectsFromArray:tail];
     return ret;
 }
@@ -76,9 +76,9 @@ NSMutableArray *editableTail(NSArray *tail) {
 }
 
 -(unsigned)tailoff {
-    if (self.cnt < 32)
+    if (self.cnt < kPVNodeCapacity)
         return 0;
-    return ((self.cnt-1) >> 5) << 5;
+    return ((self.cnt-1) >> kPVShiftStep) << kPVShiftStep;
 }
 
 -(NSMutableArray*)arrayFor:(unsigned)i {
@@ -86,8 +86,8 @@ NSMutableArray *editableTail(NSArray *tail) {
         if (i >= [self tailoff])
             return self.tail;
         JDVectorNode *node = self.root;
-        for (int level = (int)self.shift; level > 0; level -= 5)
-            node = (JDVectorNode*)node.array[(i >> level) & 0x01f];
+        for (int level = (int)self.shift; level > 0; level -= kPVShiftStep)
+            node = (JDVectorNode*)node.array[(i >> level) & kPVTailMask];
         return node.array;
     }
     @throw [NSException exceptionWithName:NSRangeException
@@ -100,8 +100,8 @@ NSMutableArray *editableTail(NSArray *tail) {
         if (i >= [self tailoff])
             return self.tail;
         JDVectorNode *node = self.root;
-        for (int level = (int)self.shift; level > 0; level -= 5)
-            node = [self ensureEditableNode:(JDVectorNode*)node.array[(i >> level) & 0x01f]];
+        for (int level = (int)self.shift; level > 0; level -= kPVShiftStep)
+            node = [self ensureEditableNode:(JDVectorNode*)node.array[(i >> level) & kPVTailMask]];
         return node.array;
     }
     @throw [NSException exceptionWithName:NSRangeException
@@ -111,16 +111,16 @@ NSMutableArray *editableTail(NSArray *tail) {
 
 -(JDVectorNode*)pushTailAt:(unsigned)level parent:(JDVectorNode*)parent tail:(JDVectorNode*)tailnode {
     parent = [self ensureEditableNode:parent];
-    unsigned subidx = ((self.cnt - 1) >> level) & 0x01f;
+    unsigned subidx = ((self.cnt - 1) >> level) & kPVTailMask;
     JDVectorNode *ret = parent;
     JDVectorNode *nodeToInsert;
-    if (level == 5)
+    if (level == kPVShiftStep)
         nodeToInsert = tailnode;
     else {
         if (subidx >= parent.array.count)
-            nodeToInsert = newPath(self.root.edit, level - 5, tailnode);
+            nodeToInsert = newPath(self.root.edit, level - kPVShiftStep, tailnode);
         else
-            nodeToInsert = [self pushTailAt:level - 5 parent:(JDVectorNode*)parent.array[subidx] tail:tailnode];
+            nodeToInsert = [self pushTailAt:level - kPVShiftStep parent:(JDVectorNode*)parent.array[subidx] tail:tailnode];
     }
     [ret.array addObject:nodeToInsert];
     return ret;
@@ -130,7 +130,7 @@ NSMutableArray *editableTail(NSArray *tail) {
     [self ensureEditable];
     int i = self.cnt;
     // room in tail?
-    if (i - [self tailoff] < 32) {
+    if (i - [self tailoff] < kPVNodeCapacity) {
         [self.tail addObject:(val != nil ? val : [NSNull null])];
         _cnt++;
         return self;
@@ -138,16 +138,16 @@ NSMutableArray *editableTail(NSArray *tail) {
     // Full tail, push into tree
     JDVectorNode *newroot;
     JDVectorNode *tailnode = [[[JDVectorNode alloc] initWithEdit:self.root.edit array:self.tail] autorelease];
-    self.tail = [NSMutableArray arrayWithCapacity:32];
+    self.tail = [NSMutableArray arrayWithCapacity:kPVNodeCapacity];
     [self.tail addObject:(val != nil ? val : [NSNull null])];
     unsigned newshift = self.shift;
     
     // Overflow root?
-    if ((self.cnt >> 5) > (1 << self.shift)) {
+    if ((self.cnt >> kPVShiftStep) > (1 << self.shift)) {
         newroot = [[[JDVectorNode alloc] initWithEdit:self.root.edit] autorelease];
         [newroot.array addObject:self.root];
         [newroot.array addObject:newPath(self.root.edit, self.shift, tailnode)];
-        newshift += 5;
+        newshift += kPVShiftStep;
     } else
         newroot = [self pushTailAt:self.shift parent:self.root tail:tailnode];
     self.root = newroot;
@@ -158,7 +158,7 @@ NSMutableArray *editableTail(NSArray *tail) {
 
 -(id)nth:(unsigned)i {
     [self ensureEditable];
-    id v = [self arrayFor:i][i & 0x01f];
+    id v = [self arrayFor:i][i & kPVTailMask];
     if (v == [NSNull null]) return nil;
     return v;
 }
@@ -173,10 +173,10 @@ NSMutableArray *editableTail(NSArray *tail) {
     node = [self ensureEditableNode:node];
     JDVectorNode *ret = node;
     if (level == 0)
-        ret.array[i & 0x01f] = (val != nil ? val : [NSNull null]);
+        ret.array[i & kPVTailMask] = (val != nil ? val : [NSNull null]);
     else {
-        unsigned subidx = (i >> level) & 0x01f;
-        ret.array[subidx] = [self doAssocAt:level - 5 node:(JDVectorNode*)node.array[subidx] index:i object:val];
+        unsigned subidx = (i >> level) & kPVTailMask;
+        ret.array[subidx] = [self doAssocAt:level - kPVShiftStep node:(JDVectorNode*)node.array[subidx] index:i object:val];
     }
     return ret;
 }
@@ -185,7 +185,7 @@ NSMutableArray *editableTail(NSArray *tail) {
     [self ensureEditable];
     if (i < self.cnt) {
         if (i >= [self tailoff]) {
-            self.tail[i & 0x01f] = (val != nil ? val : [NSNull null]);
+            self.tail[i & kPVTailMask] = (val != nil ? val : [NSNull null]);
             return self;
         }
         

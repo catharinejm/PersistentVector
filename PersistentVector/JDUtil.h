@@ -10,4 +10,11 @@
 #import "JDVectorNode.h"
 #import "JDAtomicReference.h"
 
+//#define kPVShiftStep 5
+//#define kPVNodeCapacity 32
+//#define kPVTailMask 0x01f
+#define kPVShiftStep 5
+#define kPVNodeCapacity (1 << kPVShiftStep)
+#define kPVTailMask (kPVNodeCapacity-1)
+
 JDVectorNode *newPath(JDAtomicReference *edit, unsigned level, JDVectorNode *node);

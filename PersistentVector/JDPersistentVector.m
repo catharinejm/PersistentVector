@@ -28,7 +28,7 @@
     static dispatch_once_t once;
     dispatch_once(&once, ^{
         _EMPTY_NODE = [[JDVectorNode alloc] initWithEdit:[[[JDAtomicReference alloc] initWithVal:nil] autorelease]
-                                                  array:[NSMutableArray arrayWithCapacity:32]];
+                                                  array:[NSMutableArray arrayWithCapacity:kPVNodeCapacity]];
     });
     return [_EMPTY_NODE retain];
 }
@@ -37,7 +37,7 @@
     static JDPersistentVector *_EMPTY = nil;
     static dispatch_once_t once;
     dispatch_once(&once, ^{
-        _EMPTY = [[JDPersistentVector alloc] initWithCnt:0 shift:5 root:[JDPersistentVector EMPTY_NODE] tail:[NSArray array]];
+        _EMPTY = [[JDPersistentVector alloc] initWithCnt:0 shift:kPVShiftStep root:[JDPersistentVector EMPTY_NODE] tail:[NSArray array]];
     });
     return [_EMPTY retain];
 }
@@ -79,9 +79,9 @@
 #pragma mark - Util
 
 -(unsigned)tailoff {
-    if (self.cnt < 32)
+    if (self.cnt < kPVNodeCapacity)
         return 0;
-    return ((self.cnt - 1) >> 5) << 5;
+    return ((self.cnt - 1) >> kPVShiftStep) << kPVShiftStep;
 }
 
 -(NSArray*)arrayFor:(unsigned int)i {
@@ -89,8 +89,8 @@
         if (i >= [self tailoff])
             return self.tail;
         JDVectorNode *node = self.root;
-        for (int level = (int)self.shift; level > 0; level -= 5)
-            node = (JDVectorNode*)node.array[(i >> level) & 0x01f];
+        for (int level = (int)self.shift; level > 0; level -= kPVShiftStep)
+            node = (JDVectorNode*)node.array[(i >> level) & kPVTailMask];
         return node.array;
     }
     @throw [NSException exceptionWithName:NSRangeException
@@ -99,7 +99,7 @@
 }
 
 -(id)nth:(unsigned int)i {
-    id v = [self arrayFor:i][i & 0x01f];
+    id v = [self arrayFor:i][i & kPVTailMask];
     if (v == [NSNull null]) return nil;
     return v;
 }
@@ -113,10 +113,10 @@
 JDVectorNode *doAssoc(unsigned level, JDVectorNode *node, unsigned i, id val) {
     JDVectorNode *ret = [[JDVectorNode alloc] initWithEdit:node.edit array:[[node.array mutableCopy] autorelease]];
     if (level == 0)
-        ret.array[i & 0x01f] = (val != nil ? val : [NSNull null]);
+        ret.array[i & kPVTailMask] = (val != nil ? val : [NSNull null]);
     else {
-        int subidx = (i >> level) & 0x01f;
-        ret.array[subidx] = doAssoc(level - 5, (JDVectorNode*)node.array[subidx], i, val);
+        int subidx = (i >> level) & kPVTailMask;
+        ret.array[subidx] = doAssoc(level - kPVShiftStep, (JDVectorNode*)node.array[subidx], i, val);
     }
     return [ret autorelease];
 }
@@ -124,7 +124,7 @@ JDVectorNode *doAssoc(unsigned level, JDVectorNode *node, unsigned i, id val) {
 -(instancetype)assocN:(unsigned int)i object:(id)val {
     if (i < self.cnt) {
         if (i >= [self tailoff]) {
-            unsigned tailIdx = i & 0x01f;
+            unsigned tailIdx = i & kPVTailMask;
             NSArray *newTail;
             val = (val != nil ? val : [NSNull null]);
             if (self.tail.count == 1)
@@ -159,24 +159,27 @@ JDVectorNode *doAssoc(unsigned level, JDVectorNode *node, unsigned i, id val) {
 }
 
 -(JDVectorNode*)pushTailAt:(unsigned)level parent:(JDVectorNode*)parent tail:(JDVectorNode*)tailnode {
-    int subidx = ((self.cnt - 1) >> level) & 0x01f;
+    int subidx = ((self.cnt - 1) >> level) & kPVTailMask;
     JDVectorNode *ret = [[JDVectorNode alloc] initWithEdit:parent.edit array:[[parent.array mutableCopy] autorelease]];
     JDVectorNode *nodeToInsert;
-    if (level == 5)
+    if (level == kPVShiftStep)
         nodeToInsert = tailnode;
     else {
         if (subidx >= parent.array.count)
-            nodeToInsert = newPath(self.root.edit, level-5, tailnode);
+            nodeToInsert = newPath(self.root.edit, level-kPVShiftStep, tailnode);
         else
-            nodeToInsert = [self pushTailAt:level-5 parent:(JDVectorNode*)parent.array[subidx] tail:tailnode];
+            nodeToInsert = [self pushTailAt:level-kPVShiftStep parent:(JDVectorNode*)parent.array[subidx] tail:tailnode];
     }
-    [ret.array addObject:nodeToInsert];
+    if (subidx < ret.array.count)
+        [ret.array setObject:nodeToInsert atIndexedSubscript:subidx];
+    else
+        [ret.array addObject:nodeToInsert];
     return [ret autorelease];
 }
 
 -(instancetype)cons:(id)val {
     // Room in tail?
-    if (self.cnt - [self tailoff] < 32) {
+    if (self.cnt - [self tailoff] < kPVNodeCapacity) {
         NSArray *newTail = [self.tail arrayByAddingObject:(val != nil ? val : [NSNull null])];
         return [[[JDPersistentVector alloc] initWithCnt:self.cnt + 1
                                                  shift:self.shift
@@ -192,11 +195,11 @@ JDVectorNode *doAssoc(unsigned level, JDVectorNode *node, unsigned i, id val) {
                               
     unsigned newshift = self.shift;
     // Overflow root?
-    if ((self.cnt >> 5) > (1 << self.shift)) {
+    if ((self.cnt >> kPVShiftStep) > (1 << self.shift)) {
         newroot = [[[JDVectorNode alloc] initWithEdit:self.root.edit] autorelease];
         [newroot.array addObject:self.root];
         [newroot.array addObject:newPath(self.root.edit, self.shift, tailnode)];
-        newshift += 5;
+        newshift += kPVShiftStep;
     } else
         newroot = [self pushTailAt:self.shift parent:self.root tail:tailnode];
     return [[[JDPersistentVector alloc] initWithCnt:self.cnt + 1 shift:newshift root:newroot tail:@[val]] autorelease];

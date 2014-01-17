@@ -7,6 +7,7 @@
 //
 
 #import "JDVectorNode.h"
+#import "JDUtil.h"
 
 @implementation JDVectorNode
 
@@ -23,7 +24,7 @@
     self = [super init];
     if (self) {
         _edit = [ed retain];
-        _array = [[NSMutableArray arrayWithCapacity:32] retain];
+        _array = [[NSMutableArray arrayWithCapacity:kPVNodeCapacity] retain];
     }
     return self;
 }
